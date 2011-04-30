@@ -21,19 +21,15 @@ public class SavingsAccount {
     private double initialAmount;
 
     //obj builders
-    public SavingsAccount(){
-
-    }
+    public SavingsAccount(){}
     
     public SavingsAccount(int theSavingsAccountID, int theCurrentAccountID,
-            int theSavingsAccountTypeID, Date theOpenDate, double theInitialAmount){
-
+            int theSavingsAccountTypeID, Date theOpenDate, double theInitialAmount){ 
         setSavingsAccountID(theSavingsAccountID);
         setCurrentAccountID(theCurrentAccountID);
         setSavingsAccountTypeID(theSavingsAccountTypeID);
         setOpenDate(theOpenDate);
         setInitialAmount(theInitialAmount);
-
     }
     //getters
     /**

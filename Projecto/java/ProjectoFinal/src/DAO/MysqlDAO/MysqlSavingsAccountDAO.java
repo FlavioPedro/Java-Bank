@@ -4,6 +4,7 @@
  */
 package DAO.MysqlDAO;
 
+import Beans.CurrentAccount;
 import Beans.SavingsAccount;
 import DAO.MySQLExceptions.EmptySetException;
 import DAO.MySQLExceptions.UnknownRegistException;
@@ -198,6 +199,56 @@ public class MysqlSavingsAccountDAO implements SavingsAccountDAO{
         ps = conn.prepareStatement(query);
                 
         ps.setInt(1, bankID);
+        
+        //Executes the Query and gets the result into a ResultSet.
+        rs = ps.executeQuery();
+        
+        //Checks if the ResultSet is Empty, if so throws an exception.
+        if(rs.wasNull()){
+            throw new EmptySetException(EMPTY_SAVINGS_ACCOUNT_TABLE);
+        }
+        while (rs.next()) {
+
+            //creates a temporary beanObject to store the data.
+            SavingsAccount tempSavingsAccountBean = new SavingsAccount();
+
+            //inicializes the beanObject atributes with
+            //the values extracted from the batabase.
+            tempSavingsAccountBean.setSavingsAccountID(rs.getInt(1));
+            tempSavingsAccountBean.setCurrentAccountID(rs.getInt(2));
+            tempSavingsAccountBean.setSavingsAccountTypeID(rs.getInt(3));
+            tempSavingsAccountBean.setOpenDate((Date)rs.getDate(4));
+            tempSavingsAccountBean.setInitialAmount(rs.getInt(5));
+
+            //adds the temporary bean to the ArrayList to return.
+            allSavingsAccountBeans.add(tempSavingsAccountBean);
+        }
+
+        //closes the statement.
+        ps.close();
+
+        //returns the ArrayList of savings accounts on the savings account table
+        return allSavingsAccountBeans;
+    }
+    
+    public ArrayList<SavingsAccount> findAllSavingsAccountByCurrent
+            (CurrentAccount current) throws SQLException, EmptySetException {
+        // implement search Savings Account here using the
+        // supplied criteria.
+        // Return an ArrayList.
+
+        //The ArrayList to be filled with the ResultSet and returned.
+        ArrayList<SavingsAccount> allSavingsAccountBeans = new ArrayList<SavingsAccount>();
+
+        //The Query to be Executed.
+        
+        query = "SELECT s.SavingsAccountID, s.currentAccountID, s.savingsAccountTypeID, s.openDate, s.initialAmount"
+                + " FROM SavingsAccount s INNER JOIN CurrentAccount c ON s.currentAccountID = c.currentAccountID"
+                + " WHERE s.currentAccountID = ?";
+        
+        ps = conn.prepareStatement(query);
+                
+        ps.setInt(1, current.getCurrentAccountID());
         
         //Executes the Query and gets the result into a ResultSet.
         rs = ps.executeQuery();

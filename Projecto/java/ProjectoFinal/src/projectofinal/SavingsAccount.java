@@ -5,6 +5,7 @@
 
 package projectofinal;
 
+import Beans.BankAccount;
 import java.util.Date;
 
 /**

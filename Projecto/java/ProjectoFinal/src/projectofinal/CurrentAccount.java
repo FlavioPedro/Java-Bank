@@ -5,6 +5,7 @@
 
 package projectofinal;
 
+import Beans.BankAccount;
 import java.util.*;
 import java.io.*;
 import java.util.logging.Level;

@@ -4,35 +4,54 @@
  */
 
 package Beans;
+import DAO.MySQLExceptions.EmptySetException;
+import DAO.MysqlDAO.MysqlCurrentAccountDAO;
+import DAO.MysqlDAO.MysqlCurrentMovementHistoryDAO;
+import DAO.MysqlDAO.MysqlSavingsAccountDAO;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 
 /**
  *
  * @author Flávio
  */
-public class CurrentAccount {
+public class CurrentAccount extends BankAccount{
 
+    private ArrayList<SavingsAccount> allSavingsAccount;
+    MysqlCurrentAccountDAO current;
+    MysqlSavingsAccountDAO savings;
+    MysqlCurrentMovementHistoryDAO currentHistory;
     //properties
     private int currentAccountID;
     private int bankID;
     private Date openDate;
     private double currentAmount;
-    private double inicialAmount;
+    private double initialAmount;
 
     //obj builders
-    public CurrentAccount(){
-
-    }
+    public CurrentAccount(){}
     
     public CurrentAccount(int theCurrentAccountID, int theBankID, 
-            Date theOpenDate, double theCurrentAmount, double theInicialAmount){
-        
+            Date theOpenDate, double theCurrentAmount, double theInitialAmount){
         setCurrentAccountID(theCurrentAccountID);
         setBankID(theBankID);
         setOpenDate(theOpenDate);
         setCurrentAmount(theCurrentAmount);
-        setInitialAmount(theInicialAmount);
-
+        setInitialAmount(theInitialAmount);
+        try {
+            savings = new MysqlSavingsAccountDAO();
+            this.allSavingsAccount = savings.findAllSavingsAccountByCurrent(this);
+        } catch (EmptySetException ex) {
+            Logger.getLogger(CurrentAccount.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(CurrentAccount.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
+            Logger.getLogger(CurrentAccount.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     //getters
     /**
@@ -64,10 +83,10 @@ public class CurrentAccount {
     }
 
     /**
-     * @return the inicialAmount
+     * @return the initialAmount
      */
     public double getInitialAmount() {
-        return inicialAmount;
+        return initialAmount;
     }
 
     //setters
@@ -103,11 +122,45 @@ public class CurrentAccount {
     /**
      * @param inicialAmount the inicialAmount to set
      */
-    public void setInitialAmount(double inicialAmount) {
-        this.inicialAmount = inicialAmount;
+    public void setInitialAmount(double initialAmount) {
+        this.initialAmount = initialAmount;
     }
 
-    //outputString generator
+    
+    public ArrayList<SavingsAccount> getSavingsAccounts(){
+        return allSavingsAccount;
+    }
+    
+    public void setSavingsAccount(ArrayList<SavingsAccount> theSavings){
+        allSavingsAccount = theSavings;
+    }
+    
+    public void addSavingsAccount(SavingsAccount savings){
+        allSavingsAccount.add(savings);
+    }
+    
+    public void removeSavingsAccount(SavingsAccount savings){
+        allSavingsAccount.remove(savings);
+    }
+    
+    public void close(){
+        if (!this.allSavingsAccount.isEmpty())
+            JOptionPane.showMessageDialog(null, "There are savings accounts associated to this current account.", "Removing Current Account:", JOptionPane.ERROR_MESSAGE);
+        else if (this.getCurrentAmount() != 0)
+                JOptionPane.showMessageDialog(null, "There's amount on this current account.", "Removing Current Account:", JOptionPane.ERROR_MESSAGE);
+        else{
+            try {
+                    current = new MysqlCurrentAccountDAO();
+                    current.deleteCurrentAccount(this);
+                } catch (ClassNotFoundException ex) {
+                    Logger.getLogger(CurrentAccount.class.getName()).log(Level.SEVERE, null, ex);    
+                } catch (SQLException ex) {
+                    Logger.getLogger(CurrentAccount.class.getName()).log(Level.SEVERE, null, ex);
+                }
+        }
+    }
+    
+    //Output String generator
     @Override
     public String toString(){
 
@@ -122,4 +175,44 @@ public class CurrentAccount {
 
         return toReturn;
     }
+
+    @Override
+    public double getAmount() {
+        double currentAmount = this.getCurrentAmount();
+        double savingsInitialAmount = 0;
+        for (SavingsAccount s : this.allSavingsAccount){
+            savingsInitialAmount += s.getInitialAmount();
+        }
+        return currentAmount + savingsInitialAmount;
+    }
+
+    @Override
+    public void deposit(double amount) {
+        this.setCurrentAmount(this.getCurrentAmount() + amount);
+        try {
+            currentHistory = new MysqlCurrentMovementHistoryDAO();
+            CurrentMovementHistory history = new CurrentMovementHistory
+                (currentAccountID, "Deposito", amount, openDate);
+            currentHistory.insertCurrentMovementHistory(history);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(CurrentAccount.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
+            Logger.getLogger(CurrentAccount.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public void withdrawal(double amount){
+        this.setCurrentAmount(this.getCurrentAmount() - amount);
+        try {
+            currentHistory = new MysqlCurrentMovementHistoryDAO();
+            CurrentMovementHistory history = new CurrentMovementHistory
+                (currentAccountID, "Levantamento", amount, openDate);
+            currentHistory.insertCurrentMovementHistory(history);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(CurrentAccount.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
+            Logger.getLogger(CurrentAccount.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
 }
